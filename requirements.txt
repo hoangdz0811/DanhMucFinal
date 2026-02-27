@@ -1,3 +1,5 @@
 ﻿streamlit
 pandas
 vnstock
+python-dotenv
+supabase
