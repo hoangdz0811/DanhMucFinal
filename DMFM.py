@@ -429,15 +429,15 @@ if logo_b64:
 <div class="main-header">
     <img src="data:image/png;base64,{logo_b64}" class="logo-img" alt="KAFI SAIGON">
     <h1>BÁO CÁO DANH MỤC ĐẦU TƯ</h1>
-    <div class="sub">Cập nhật hàng ngày</div>
+    <div class="sub">Cập nhật {datetime.now().strftime('%d/%m/%Y')}</div>
     <div class="divider"></div>
 </div>
 """
 else:
-    header_html = """
+    header_html = f"""
 <div class="main-header">
     <h1>BÁO CÁO DANH MỤC ĐẦU TƯ</h1>
-    <div class="sub">Cập nhật hàng ngày</div>
+    <div class="sub">Cập nhật {datetime.now().strftime('%d/%m/%Y')}</div>
     <div class="divider"></div>
 </div>
 """
