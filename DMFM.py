@@ -483,43 +483,7 @@ with st.spinner("Đang lấy giá thị trường..."):
             "nganh": industry_map.get(item["ma_cp"], "—"),
         })
 
-# TÍNH TỔNG TỶ SUẤT SINH LỜI DANH MỤC
-total_profit = 0
-total_weight = 0
-count_valid = 0
-for r in rows:
-    if r["profit_pct"] is not None:
-        total_profit += r["profit_pct"] * r["ty_trong"]
-        total_weight += r["ty_trong"]
-        count_valid += 1
 
-portfolio_return = total_profit / total_weight if total_weight > 0 else 0
-
-# KPI CARDS
-profit_cls = "positive" if portfolio_return >= 0 else "negative"
-profit_sign = "+" if portfolio_return >= 0 else ""
-
-kpi_html = f"""
-<div class="kpi-row">
-    <div class="kpi-card">
-        <div class="kpi-title-row"><span class="kpi-icon">📈</span><div class="label">Tỷ suất sinh lời danh mục</div></div>
-        <div class="value {profit_cls}">{profit_sign}{portfolio_return:.2f}%</div>
-    </div>
-    <div class="kpi-card">
-        <div class="kpi-title-row"><span class="kpi-icon">💼</span><div class="label">Số lượng cổ phiếu</div></div>
-        <div class="value neutral">{len(portfolio)}</div>
-    </div>
-    <div class="kpi-card">
-        <div class="kpi-title-row"><span class="kpi-icon">⚖️</span><div class="label">Tổng tỷ trọng</div></div>
-        <div class="value neutral">{sum(r['ty_trong'] for r in rows)}%</div>
-    </div>
-    <div class="kpi-card">
-        <div class="kpi-title-row"><span class="kpi-icon">📅</span><div class="label">Ngày cập nhật</div></div>
-        <div class="value neutral" style="font-size:1.15rem;">{datetime.now().strftime('%d/%m/%Y')}</div>
-    </div>
-</div>
-"""
-st.markdown(kpi_html, unsafe_allow_html=True)
 
 # BẢNG DANH MỤC (HTML) + NÚT CHỈNH SỬA / XÓA
 table_rows_html = ""
