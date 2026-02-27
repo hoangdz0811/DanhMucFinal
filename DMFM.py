@@ -710,7 +710,7 @@ for i, item in enumerate(portfolio):
 closed = st.session_state.closed_positions
 if closed:
     st.markdown("---")
-    st.markdown("### 📊 Lịch sử giao dịch đã đóng")
+    st.markdown("### <span style='color:#00897B;'>📊 Lịch sử giao dịch đã đóng</span>", unsafe_allow_html=True)
 
     # Phân loại
     chot_loi = [c for c in closed if c["loai"] == "chot_loi"]
