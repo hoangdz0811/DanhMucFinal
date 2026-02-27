@@ -330,7 +330,7 @@ def save_closed(data):
 def get_market_price(symbol: str) -> float | None:
     """Lấy giá đóng cửa mới nhất của 1 mã cổ phiếu (đơn vị: VND)."""
     try:
-        quote = Quote(symbol=symbol, source='VCI')
+        quote = Quote(symbol=symbol)
         df = quote.history(length="1M", interval="1D")
         if df is not None and not df.empty:
             # vnstock trả giá theo đơn vị nghìn VND (VD: 92.6 = 92,600 VND)
