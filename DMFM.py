@@ -1,11 +1,20 @@
 import streamlit as st
 import pandas as pd
-import json
 import os
 import base64
 from pathlib import Path
 from datetime import datetime, date
 from vnstock import Quote, Listing
+from dotenv import load_dotenv
+from supabase import create_client, Client
+
+# ============================================================
+# TẢI BIẾN MÔI TRƯỜNG & KHỞI TẠO SUPABASE
+# ============================================================
+load_dotenv()
+url: str = os.getenv("SUPABASE_URL")
+key: str = os.getenv("SUPABASE_KEY")
+supabase: Client = create_client(url, key)
 
 # ============================================================
 # CẤU HÌNH TRANG
@@ -274,53 +283,92 @@ st.markdown("""
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     header {visibility: hidden;}
+
+    /* ===== RESPONSIVE DESIGN (Điện thoại & Tablet) ===== */
+    @media (max-width: 992px) {
+        .kpi-row {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+    
+    @media (max-width: 768px) {
+        .main-header h1 {
+            font-size: 1.5rem;
+        }
+        .main-header .sub {
+            font-size: 0.75rem;
+        }
+        .main-header .logo-img {
+            position: relative;
+            height: 120px;
+            display: block;
+            margin: 0 auto 12px;
+        }
+        .kpi-row {
+            grid-template-columns: 1fr;
+        }
+        .portfolio-table {
+            display: block;
+            overflow-x: auto;
+            white-space: nowrap;
+        }
+        .portfolio-table thead th, .portfolio-table tbody td {
+            padding: 10px;
+            font-size: 0.85rem;
+        }
+        .stButton > button {
+            padding: 8px 16px;
+            font-size: 0.8rem;
+        }
+    }
 </style>
 """, unsafe_allow_html=True)
 
 # ============================================================
-# DỮ LIỆU - LƯU/ĐỌC JSON
+# DỮ LIỆU - LƯU/ĐỌC SUPABASE
 # ============================================================
-DATA_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "portfolio_data.json")
-
-DEFAULT_PORTFOLIO = [
-    {"ngay_mua": "2026-02-03", "ma_cp": "MWG", "gia_von": 76000, "ty_trong": 25},
-    {"ngay_mua": "2026-02-04", "ma_cp": "ANV", "gia_von": 26000, "ty_trong": 25},
-    {"ngay_mua": "2026-02-05", "ma_cp": "BMP", "gia_von": 145000, "ty_trong": 25},
-]
-
 
 def load_portfolio():
-    """Đọc danh mục từ file JSON, nếu không có thì dùng mặc định."""
-    if os.path.exists(DATA_FILE):
-        with open(DATA_FILE, "r", encoding="utf-8") as f:
-            return json.load(f)
-    return DEFAULT_PORTFOLIO.copy()
+    """Đọc danh mục từ bảng portfolio trên Supabase."""
+    try:
+        response = supabase.table("portfolio").select("*").execute()
+        return response.data
+    except Exception as e:
+        st.error(f"Lỗi đọc Supabase: {e}")
+        return []
 
+def save_portfolio_item(data):
+    """Thêm 1 record vào bảng portfolio trên Supabase."""
+    supabase.table("portfolio").insert(data).execute()
 
-def save_portfolio(data):
-    """Lưu danh mục ra file JSON."""
-    with open(DATA_FILE, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
+def update_portfolio_item(item_id, data):
+    """Cập nhật 1 record trong bảng portfolio."""
+    supabase.table("portfolio").update(data).eq("id", item_id).execute()
 
+def delete_portfolio_item(item_id):
+    """Xóa 1 record trong bảng portfolio."""
+    supabase.table("portfolio").delete().eq("id", item_id).execute()
 
 # ============================================================
 # DỮ LIỆU - VỊ THẾ ĐÃ ĐÓNG (Chốt lời / Cắt lỗ)
 # ============================================================
-CLOSED_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "closed_positions.json")
-
 
 def load_closed():
-    """Đọc danh sách vị thế đã đóng."""
-    if os.path.exists(CLOSED_FILE):
-        with open(CLOSED_FILE, "r", encoding="utf-8") as f:
-            return json.load(f)
-    return []
+    """Đọc danh sách vị thế đã đóng từ Supabase."""
+    try:
+        response = supabase.table("closed_positions").select("*").execute()
+        return response.data
+    except Exception as e:
+        st.error(f"Lỗi đọc Supabase: {e}")
+        return []
 
+def save_closed_item(data):
+    """Thêm 1 record vào bảng closed_positions trên Supabase."""
+    supabase.table("closed_positions").insert(data).execute()
 
-def save_closed(data):
-    """Lưu danh sách vị thế đã đóng."""
-    with open(CLOSED_FILE, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
+def delete_closed_item(item_id):
+    """Xóa 1 record trong bảng closed_positions."""
+    supabase.table("closed_positions").delete().eq("id", item_id).execute()
 
 
 # ============================================================
@@ -417,8 +465,8 @@ def add_stock_dialog():
             if buy_twice and new_price_2 > 0 and new_date_2:
                 entry["ngay_mua_2"] = new_date_2.strftime("%Y-%m-%d")
                 entry["gia_von_2"] = new_price_2
-            st.session_state.portfolio.append(entry)
-            save_portfolio(st.session_state.portfolio)
+            save_portfolio_item(entry)
+            st.session_state.portfolio = load_portfolio()
             st.rerun()
 
 if add_clicked:
@@ -550,8 +598,9 @@ for i, item in enumerate(portfolio):
             st.session_state.editing_idx = None
     with col_del:
         if st.button("🗑️ Xóa", key=f"del_{idx}", use_container_width=True):
-            removed = st.session_state.portfolio.pop(idx)
-            save_portfolio(st.session_state.portfolio)
+            removed = item
+            delete_portfolio_item(item["id"])
+            st.session_state.portfolio = load_portfolio()
             st.session_state.editing_idx = None
             st.toast(f"Đã xóa **{removed['ma_cp']}**", icon="🗑️")
             st.rerun()
@@ -595,10 +644,10 @@ for i, item in enumerate(portfolio):
                     closed_entry["ngay_mua_2"] = item["ngay_mua_2"]
                     closed_entry["gia_von_2"] = item["gia_von_2"]
 
-                st.session_state.closed_positions.append(closed_entry)
-                save_closed(st.session_state.closed_positions)
-                st.session_state.portfolio.pop(idx)
-                save_portfolio(st.session_state.portfolio)
+                save_closed_item(closed_entry)
+                delete_portfolio_item(item["id"])
+                st.session_state.closed_positions = load_closed()
+                st.session_state.portfolio = load_portfolio()
                 st.session_state.selling_idx = None
                 label = "Chốt lời" if profit_pct >= 0 else "Cắt lỗ"
                 st.toast(f"{label} **{item['ma_cp']}** ({profit_pct:+.2f}%)", icon="💰")
@@ -677,17 +726,20 @@ for i, item in enumerate(portfolio):
                 del_buy2_btn = False
 
             if save_btn:
-                st.session_state.portfolio[idx]["ngay_mua"] = edit_date.strftime("%Y-%m-%d")
-                st.session_state.portfolio[idx]["gia_von"] = edit_price
-                st.session_state.portfolio[idx]["ty_trong"] = edit_weight
-                # Lần mua 2
+                upd_data = {
+                    "ngay_mua": edit_date.strftime("%Y-%m-%d"),
+                    "gia_von": edit_price,
+                    "ty_trong": edit_weight,
+                }
                 if edit_price_2 > 0:
-                    st.session_state.portfolio[idx]["ngay_mua_2"] = edit_date_2.strftime("%Y-%m-%d")
-                    st.session_state.portfolio[idx]["gia_von_2"] = edit_price_2
+                    upd_data["ngay_mua_2"] = edit_date_2.strftime("%Y-%m-%d")
+                    upd_data["gia_von_2"] = edit_price_2
                 else:
-                    st.session_state.portfolio[idx].pop("ngay_mua_2", None)
-                    st.session_state.portfolio[idx].pop("gia_von_2", None)
-                save_portfolio(st.session_state.portfolio)
+                    upd_data["ngay_mua_2"] = None
+                    upd_data["gia_von_2"] = None
+
+                update_portfolio_item(item["id"], upd_data)
+                st.session_state.portfolio = load_portfolio()
                 st.session_state.editing_idx = None
                 st.cache_data.clear()
                 st.toast(f"Đã cập nhật **{item['ma_cp']}**", icon="✅")
@@ -696,9 +748,8 @@ for i, item in enumerate(portfolio):
                 st.session_state.editing_idx = None
                 st.rerun()
             if del_buy2_btn:
-                st.session_state.portfolio[idx].pop("ngay_mua_2", None)
-                st.session_state.portfolio[idx].pop("gia_von_2", None)
-                save_portfolio(st.session_state.portfolio)
+                update_portfolio_item(item["id"], {"ngay_mua_2": None, "gia_von_2": None})
+                st.session_state.portfolio = load_portfolio()
                 st.session_state.editing_idx = None
                 st.cache_data.clear()
                 st.toast(f"Đã xóa lần mua 2 của **{item['ma_cp']}**", icon="🗑️")
@@ -789,8 +840,8 @@ if closed:
             )
         with cc_btn:
             if st.button("🗑️ Xóa", key=f"del_closed_{ci}", use_container_width=True):
-                st.session_state.closed_positions.pop(ci)
-                save_closed(st.session_state.closed_positions)
+                delete_closed_item(c["id"])
+                st.session_state.closed_positions = load_closed()
                 st.toast(f"Đã xóa giao dịch **{c['ma_cp']}**", icon="🗑️")
                 st.rerun()
 
