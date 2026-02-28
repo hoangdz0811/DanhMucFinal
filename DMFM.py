@@ -59,7 +59,7 @@ st.markdown("""
         position: absolute;
         left: 0;
         top: -10px;
-        height: 120px;
+        height: 200px;
     }
     .main-header h1 {
         font-size: 1.8rem;
