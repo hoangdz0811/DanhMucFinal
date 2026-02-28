@@ -512,7 +512,7 @@ def render_tab_content(tab_id: str, tab_title: str):
         <div class="main-header">
             <img src="data:image/png;base64,{logo_b64}" class="logo-img" alt="KAFI SAIGON">
             <h1>BÁO CÁO DANH MỤC ĐẦU TƯ</h1>
-            <div class="sub">{datetime.now().strftime("%d:%m:%Y")}</div>
+            <div class="sub">Cập nhật ngày {datetime.now().strftime("%d/%m/%Y")}</div>
             <div class="divider"></div>
         </div>
         """
@@ -520,7 +520,7 @@ def render_tab_content(tab_id: str, tab_title: str):
         header_html = f"""
         <div class="main-header">
             <h1>BÁO CÁO DANH MỤC ĐẦU TƯ</h1>
-            <div class="sub">{datetime.now().strftime("%d:%m:%Y")}</div>
+            <div class="sub">Cập nhật ngày {datetime.now().strftime("%d/%m/%Y")}</div>
             <div class="divider"></div>
         </div>
         """
@@ -624,16 +624,18 @@ def render_tab_content(tab_id: str, tab_title: str):
             p_sign = ""
         profit_display = f'<span class="{p_cls}">{p_icon} {p_sign}{p:.2f}%</span>'
 
+        ty_trong_td = f'<td>{r["ty_trong"]}%</td>' if tab_id == "tab1" else ""
         table_rows_html += (f'<tr><td>{rows.index(r)+1}</td>'
                             f'<td>{ngay_display}</td>'
                             f'<td class="symbol">{r["ma_cp"]}</td><td>{gia_von_fmt}</td>'
                             f'<td>{gia_tt_fmt}</td><td>{profit_display}</td>'
-                            f'<td>{r["ty_trong"]}%</td><td>{r["nganh"]}</td></tr>')
+                            f'{ty_trong_td}<td>{r["nganh"]}</td></tr>')
 
+    ty_trong_th = '<th>Tỷ trọng</th>' if tab_id == "tab1" else ""
     table_html = ('<div class="glass-card"><table class="portfolio-table">'
                   '<thead><tr><th>STT</th><th>Ngày mua</th><th>Mã cổ phiếu</th>'
                   '<th>Giá vốn</th><th>Giá thị trường</th><th>% Lợi nhuận</th>'
-                  '<th>Tỷ trọng</th><th>Ngành</th></tr></thead>'
+                  f'{ty_trong_th}<th>Ngành</th></tr></thead>'
                   f'<tbody>{table_rows_html}</tbody></table></div>')
     st.markdown(table_html, unsafe_allow_html=True)
 
@@ -645,9 +647,10 @@ def render_tab_content(tab_id: str, tab_title: str):
         col_name, col_edit, col_sell, col_del = st.columns([3, 1, 1, 1])
         with col_name:
             ngay = datetime.strptime(item["ngay_mua"], "%Y-%m-%d").strftime("%d/%m/%Y")
+            ty_trong_text = f" — tỷ trọng {item['ty_trong']}%" if tab_id == "tab1" else ""
             st.markdown(
                 f'<span style="color:#78909C;font-size:0.85rem;">'
-                f'{idx+1}. {item["ma_cp"]} — tỷ trọng {item["ty_trong"]}%</span>',
+                f'{idx+1}. {item["ma_cp"]}{ty_trong_text}</span>',
                 unsafe_allow_html=True,
             )
         with col_edit:
