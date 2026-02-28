@@ -311,6 +311,16 @@ st.markdown("""
     [data-testid="stForm"]:hover {
         box-shadow: 0 8px 24px rgba(0,137,123,0.06) !important;
     }
+    [data-testid="stForm"] label,
+    [data-testid="stForm"] .stMarkdown p {
+        color: #263238 !important;
+        font-weight: 500 !important;
+    }
+    [data-testid="stForm"] h3, 
+    [data-testid="stForm"] h4,
+    [data-testid="stForm"] h2 {
+        color: #00796B !important;
+    }
 
     /* Ẩn hamburger menu & footer mặc định */
     #MainMenu {visibility: hidden;}
