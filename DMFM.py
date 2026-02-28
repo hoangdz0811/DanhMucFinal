@@ -51,15 +51,15 @@ st.markdown("""
     /* ===== HEADER ===== */
     .main-header {
         text-align: center;
-        padding: 24px 0 12px 0;
+        padding: 5px 0 0 0;
         animation: fadeInUp 0.5s ease-out;
         position: relative;
     }
     .main-header .logo-img {
         position: absolute;
         left: 0;
-        top: 0;
-        height: 210px;
+        top: -10px;
+        height: 180px;
     }
     .main-header h1 {
         font-size: 2rem;
@@ -100,19 +100,47 @@ st.markdown("""
         animation: fadeInUp 0.6s ease-out;
     }
 
+    /* ===== CSS TABS STREAMLIT ===== */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 12px;
+        background-color: transparent;
+    }
+    .stTabs [data-baseweb="tab"] {
+        background-color: white !important;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px 8px 0 0;
+        padding: 10px 24px;
+        color: #78909C;
+        font-weight: 600;
+        font-size: 0.95rem;
+        box-shadow: 0 -2px 5px rgba(0,0,0,0.02);
+        transition: all 0.2s ease-in-out;
+    }
+    .stTabs [data-baseweb="tab"]:hover {
+        color: #00897B;
+        background-color: #f9fdf9 !important;
+    }
+    .stTabs [aria-selected="true"] {
+        background-color: #e8f5e9 !important;
+        color: #00897B !important;
+        border-bottom-color: #00897B !important;
+        border-bottom-width: 3px !important;
+    }
+
     /* ===== KPI CARDS ===== */
     .kpi-row {
         display: grid;
         grid-template-columns: repeat(4, 1fr);
         gap: 16px;
-        margin-bottom: 24px;
+        margin-bottom: 30px;
+        margin-top: 15px;
         animation: fadeInUp 0.5s ease-out;
     }
     .kpi-card {
         background: linear-gradient(145deg, #00897B 0%, #00796B 100%);
         border: none;
-        border-radius: 16px;
-        padding: 22px 18px 18px;
+        border-radius: 12px;
+        padding: 20px 18px 16px;
         text-align: center;
         position: relative;
         overflow: hidden;
@@ -162,14 +190,15 @@ st.markdown("""
         border-collapse: collapse;
     }
     .portfolio-table thead th {
-        background: #00897B;
-        color: white;
+        background: #00796B;
+        color: #ffffff;
         font-weight: 700;
-        font-size: 0.73rem;
+        font-size: 0.78rem;
         text-transform: uppercase;
-        letter-spacing: 1px;
-        padding: 14px 16px;
+        letter-spacing: 1.2px;
+        padding: 18px 16px;
         text-align: center;
+        border-bottom: 2px solid #004D40;
     }
     .portfolio-table tbody td {
         padding: 16px 16px;
@@ -242,20 +271,19 @@ st.markdown("""
         background: linear-gradient(135deg, #00897B 0%, #26A69A 100%);
         color: white;
         border: none;
-        border-radius: 12px;
-        padding: 10px 24px;
-        font-weight: 700;
-        font-size: 0.88rem;
-        letter-spacing: 0.3px;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        box-shadow: 0 3px 12px rgba(0,137,123,0.25);
+        border-radius: 8px;
+        padding: 12px 24px;
+        font-weight: 600;
+        font-size: 0.9rem;
+        letter-spacing: 0.5px;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 4px 6px rgba(0,137,123,0.2);
     }
     .stButton > button:hover {
         transform: translateY(-2px);
-        box-shadow: 0 6px 24px rgba(0,137,123,0.35);
-    }
-    .stButton > button:active {
-        transform: translateY(0);
+        box-shadow: 0 6px 14px rgba(0,137,123,0.35);
+        background: linear-gradient(135deg, #00796B 0%, #00897B 100%);
+        color: white;
     }
 
     /* ===== TIMESTAMP ===== */
@@ -272,17 +300,27 @@ st.markdown("""
 
     /* ===== FORM STYLING ===== */
     [data-testid="stForm"] {
-        background: white !important;
-        border: 1px solid #e0e0e0 !important;
-        border-radius: 14px !important;
-        padding: 20px !important;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.04) !important;
+        background: #fafafa !important;
+        border: 1px solid #eeeeee !important;
+        border-radius: 12px !important;
+        padding: 24px !important;
+        margin-top: 10px;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.02) !important;
+        transition: box-shadow 0.3s ease;
+    }
+    [data-testid="stForm"]:hover {
+        box-shadow: 0 8px 24px rgba(0,137,123,0.06) !important;
     }
 
     /* Ẩn hamburger menu & footer mặc định */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     header {visibility: hidden;}
+
+    /* Loại bỏ khoảng trắng thừa của thanh tab */
+    .stTabs {
+        margin-top: -10px;
+    }
 
     /* ===== RESPONSIVE DESIGN (Điện thoại & Tablet) ===== */
     @media (max-width: 992px) {
