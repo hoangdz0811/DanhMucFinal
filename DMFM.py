@@ -482,8 +482,7 @@ def render_tab_content(tab_id: str, tab_title: str):
     curr_closed = st.session_state[closed_key]
 
     # Nút trên cùng: Thêm CP + Cập nhật giá
-    st.markdown(f"### {tab_title}")
-    _, col_add, col_refresh = st.columns([3, 1, 1])
+    _, col_add, col_refresh = st.columns([2.5, 1, 1.2])
     with col_add:
         add_clicked = st.button("➕ Thêm cổ phiếu", key=f"add_btn_{k_pfx}", use_container_width=True)
     with col_refresh:
