@@ -51,7 +51,7 @@ st.markdown("""
     /* ===== HEADER ===== */
     .main-header {
         text-align: center;
-        padding: 5px 0 0 0;
+        padding: 5px 0 20px 0;
         animation: fadeInUp 0.5s ease-out;
         position: relative;
     }
@@ -59,10 +59,10 @@ st.markdown("""
         position: absolute;
         left: 0;
         top: -10px;
-        height: 180px;
+        height: 120px;
     }
     .main-header h1 {
-        font-size: 2rem;
+        font-size: 1.8rem;
         font-weight: 900;
         background: linear-gradient(135deg, #00897B 0%, #26A69A 40%, #4DB6AC 70%, #00897B 100%);
         background-size: 200% auto;
@@ -492,6 +492,31 @@ def render_tab_content(tab_id: str, tab_title: str):
     if refresh:
         st.cache_data.clear()
 
+    # Thêm Header "Báo Cáo Danh Mục Đầu Tư" vào giữa nút và bảng
+    LOGO_PATH = Path("D:/Python file/Twise/Logo/logo.png")
+    logo_b64 = ""
+    if LOGO_PATH.exists():
+        logo_b64 = base64.b64encode(LOGO_PATH.read_bytes()).decode()
+
+    if logo_b64:
+        header_html = f"""
+        <div class="main-header">
+            <img src="data:image/png;base64,{logo_b64}" class="logo-img" alt="KAFI SAIGON">
+            <h1>BÁO CÁO DANH MỤC ĐẦU TƯ</h1>
+            <div class="sub">{datetime.now().strftime("%d:%m:%Y")}</div>
+            <div class="divider"></div>
+        </div>
+        """
+    else:
+        header_html = f"""
+        <div class="main-header">
+            <h1>BÁO CÁO DANH MỤC ĐẦU TƯ</h1>
+            <div class="sub">{datetime.now().strftime("%d:%m:%Y")}</div>
+            <div class="divider"></div>
+        </div>
+        """
+    st.markdown(header_html, unsafe_allow_html=True)
+
     @st.dialog(f"➕ Thêm cổ phiếu - {tab_title}")
     def add_stock_dialog():
         col_s1, col_s2 = st.columns(2)
@@ -869,32 +894,8 @@ def render_tab_content(tab_id: str, tab_title: str):
 
 
 # ============================================================
-# MAIN ENTRY POINT - BANNER VÀ TABS
+# MAIN ENTRY POINT - TABS
 # ============================================================
-# Load logo
-LOGO_PATH = Path("D:/Python file/Twise/Logo/logo.png")
-logo_b64 = ""
-if LOGO_PATH.exists():
-    logo_b64 = base64.b64encode(LOGO_PATH.read_bytes()).decode()
-
-if logo_b64:
-    header_html = f"""
-<div class="main-header">
-    <img src="data:image/png;base64,{logo_b64}" class="logo-img" alt="KAFI SAIGON">
-    <h1>BÁO CÁO DANH MỤC ĐẦU TƯ</h1>
-    <div class="sub">{datetime.now().strftime("%d:%m:%Y")}</div>
-    <div class="divider"></div>
-</div>
-"""
-else:
-    header_html = f"""
-<div class="main-header">
-    <h1>BÁO CÁO DANH MỤC ĐẦU TƯ</h1>
-    <div class="sub">{datetime.now().strftime("%d:%m:%Y")}</div>
-    <div class="divider"></div>
-</div>
-"""
-st.markdown(header_html, unsafe_allow_html=True)
 
 # Khởi tạo Tabs
 tab1, tab2 = st.tabs(["📑 Danh mục Tổng", "📑 Danh mục Margin"])
