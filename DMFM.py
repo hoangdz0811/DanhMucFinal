@@ -1,10 +1,8 @@
 import streamlit as st
-import pandas as pd
 import os
 import base64
 from pathlib import Path
 from datetime import datetime, date
-from vnstock import Quote, Listing
 from dotenv import load_dotenv
 from supabase import create_client, Client
 
@@ -61,7 +59,7 @@ st.markdown("""
     .main-header .logo-img {
         position: absolute;
         left: 0;
-        top: -20px;
+        top: -15px;
         height: 170px;
     }
     .main-header h1 {
