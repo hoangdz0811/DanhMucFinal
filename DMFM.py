@@ -502,9 +502,9 @@ def render_tab_content(tab_id: str, tab_title: str):
         st.cache_data.clear()
 
     # Thêm Header "Báo Cáo Danh Mục Đầu Tư" vào giữa nút và bảng
-    LOGO_PATH = Path("D:/Python file/Twise/Logo/logo.png")
+    LOGO_PATH = Path("logo.png")
     logo_b64 = ""
-    if LOGO_PATH.exists():
+    if LOGO_PATH.exists() and tab_id == "tab1":
         logo_b64 = base64.b64encode(LOGO_PATH.read_bytes()).decode()
 
     if logo_b64:
