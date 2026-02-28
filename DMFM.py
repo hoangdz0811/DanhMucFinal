@@ -58,8 +58,8 @@ st.markdown("""
     .main-header .logo-img {
         position: absolute;
         left: 0;
-        top: -10px;
-        height: 200px;
+        top: -20px;
+        height: 180px;
     }
     .main-header h1 {
         font-size: 1.8rem;
