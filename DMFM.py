@@ -492,7 +492,23 @@ def render_tab_content(tab_id: str, tab_title: str):
     curr_closed = st.session_state[closed_key]
 
     # Nút trên cùng: Thêm CP + Cập nhật giá
-    _, col_add, col_refresh = st.columns([2.5, 1, 1.2])
+    col_text, col_add, col_refresh = st.columns([2.5, 1, 1.2])
+    
+    with col_text:
+        # User wants Total Weight in Tab 1
+        if tab_id == "tab1":
+            try:
+                total_weight = sum([float(item.get("ty_trong", 0)) for item in curr_portfolio])
+            except:
+                total_weight = 0
+            
+            st.markdown(
+                f'<div style="background-color: #e8f5e9; border: 1px dashed #4DB6AC; border-radius: 8px; padding: 10px 15px; margin-top: 5px; display: inline-block;">'
+                f'<span style="color: #00796B; font-weight: 700; font-size: 0.95rem;">📊 Tổng tỷ trọng: {total_weight}%</span>'
+                f'</div>',
+                unsafe_allow_html=True
+            )
+
     with col_add:
         add_clicked = st.button("➕ Thêm cổ phiếu", key=f"add_btn_{k_pfx}", use_container_width=True)
     with col_refresh:
