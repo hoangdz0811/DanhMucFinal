@@ -8,6 +8,9 @@ from vnstock import Quote, Listing
 from dotenv import load_dotenv
 from supabase import create_client, Client
 
+from utils.data_processing import calculate_portfolio_metrics, prepare_closed_positions_stats, get_industry_map, get_market_price
+from utils.ui_components import render_header, render_portfolio_table, render_closed_stats, render_closed_table
+
 # ============================================================
 # TẢI BIẾN MÔI TRƯỜNG & KHỞI TẠO SUPABASE
 # ============================================================
@@ -421,35 +424,6 @@ def delete_closed_item(item_id):
     supabase.table("closed_positions").delete().eq("id", item_id).execute()
 
 
-# ============================================================
-# LẤY GIÁ THỊ TRƯỜNG TỪ VNSTOCK
-# ============================================================
-@st.cache_data(ttl=300, show_spinner=False)
-def get_market_price(symbol: str) -> float | None:
-    """Lấy giá đóng cửa mới nhất của 1 mã cổ phiếu (đơn vị: VND)."""
-    try:
-        quote = Quote(symbol=symbol)
-        df = quote.history(length="1M", interval="1D")
-        if df is not None and not df.empty:
-            # vnstock trả giá theo đơn vị nghìn VND (VD: 92.6 = 92,600 VND)
-            raw_price = float(df["close"].iloc[-1])
-            return raw_price * 1000
-    except Exception:
-        pass
-    return None
-
-
-@st.cache_data(ttl=86400, show_spinner=False)
-def get_industry_map() -> dict:
-    """Lấy bảng phân ngành ICB cấp 2 cho tất cả mã CP (cache 1 ngày)."""
-    try:
-        ls = Listing()
-        df = ls.symbols_by_industries()
-        if df is not None and not df.empty:
-            return dict(zip(df["symbol"], df["industry_name"]))
-    except Exception:
-        pass
-    return {}
 
 
 # ============================================================
@@ -518,29 +492,7 @@ def render_tab_content(tab_id: str, tab_title: str):
         st.cache_data.clear()
 
     # Thêm Header "Báo Cáo Danh Mục Đầu Tư" vào giữa nút và bảng
-    LOGO_PATH = Path("logo.png")
-    logo_b64 = ""
-    if LOGO_PATH.exists() and tab_id == "tab1":
-        logo_b64 = base64.b64encode(LOGO_PATH.read_bytes()).decode()
-
-    if logo_b64:
-        header_html = f"""
-        <div class="main-header">
-            <img src="data:image/png;base64,{logo_b64}" class="logo-img" alt="KAFI SAIGON">
-            <h1>BÁO CÁO DANH MỤC ĐẦU TƯ</h1>
-            <div class="sub">Cập nhật ngày {datetime.now().strftime("%d/%m/%Y")}</div>
-            <div class="divider"></div>
-        </div>
-        """
-    else:
-        header_html = f"""
-        <div class="main-header">
-            <h1>BÁO CÁO DANH MỤC ĐẦU TƯ</h1>
-            <div class="sub">Cập nhật ngày {datetime.now().strftime("%d/%m/%Y")}</div>
-            <div class="divider"></div>
-        </div>
-        """
-    st.markdown(header_html, unsafe_allow_html=True)
+    render_header(tab_id)
 
     @st.dialog(f"➕ Thêm cổ phiếu - {tab_title}")
     def add_stock_dialog():
@@ -592,68 +544,10 @@ def render_tab_content(tab_id: str, tab_title: str):
 
     with st.spinner("Đang lấy giá thị trường..."):
         industry_map = get_industry_map()
-        rows = []
-        for i, item in enumerate(curr_portfolio):
-            market_price = get_market_price(item["ma_cp"])
-            # Giá vốn trung bình nếu mua 2 lần
-            gia_von_avg = item["gia_von"]
-            if item.get("gia_von_2"):
-                gia_von_avg = (item["gia_von"] + item["gia_von_2"]) / 2
+        rows = calculate_portfolio_metrics(curr_portfolio, industry_map)
 
-            if market_price:
-                profit_pct = (market_price - gia_von_avg) / gia_von_avg * 100
-                display_price = market_price
-            else:
-                profit_pct = 0.0
-                display_price = gia_von_avg
-
-            rows.append({
-                "ma_cp": item["ma_cp"],
-                "ngay_mua": item["ngay_mua"],
-                "gia_von": item["gia_von"],
-                "ngay_mua_2": item.get("ngay_mua_2"),
-                "gia_von_2": item.get("gia_von_2"),
-                "gia_von_avg": gia_von_avg,
-                "current_price": display_price,
-                "profit_pct": profit_pct,
-                "ty_trong": item["ty_trong"],
-                "nganh": industry_map.get(item["ma_cp"], "—"),
-            })
-
-    # BẢNG DANH MỤC (HTML) + NÚT CHỈNH SỬA / XÓA
-    table_rows_html = ""
-    for r in rows:
-        ngay_display = datetime.strptime(r["ngay_mua"], "%Y-%m-%d").strftime("%d/%m/%Y")
-        if r.get("ngay_mua_2"):
-            ngay_display += "<br>" + datetime.strptime(r["ngay_mua_2"], "%Y-%m-%d").strftime("%d/%m/%Y")
-
-        gia_von_fmt = f"{r['gia_von_avg']:,.0f}".replace(",", ".")
-        gia_tt_fmt = f"{r['current_price']:,.0f}".replace(",", ".")
-        p = r["profit_pct"]
-        if p >= 0:
-            p_cls = "profit-positive"
-            p_icon = "▲"
-            p_sign = "+"
-        else:
-            p_cls = "profit-negative"
-            p_icon = "▼"
-            p_sign = ""
-        profit_display = f'<span class="{p_cls}">{p_icon} {p_sign}{p:.2f}%</span>'
-
-        ty_trong_td = f'<td>{r["ty_trong"]}%</td>' if tab_id == "tab1" else ""
-        table_rows_html += (f'<tr><td>{rows.index(r)+1}</td>'
-                            f'<td>{ngay_display}</td>'
-                            f'<td class="symbol">{r["ma_cp"]}</td><td>{gia_von_fmt}</td>'
-                            f'<td>{gia_tt_fmt}</td><td>{profit_display}</td>'
-                            f'{ty_trong_td}<td>{r["nganh"]}</td></tr>')
-
-    ty_trong_th = '<th>Tỷ trọng</th>' if tab_id == "tab1" else ""
-    table_html = ('<div class="glass-card"><table class="portfolio-table">'
-                  '<thead><tr><th>STT</th><th>Ngày mua</th><th>Mã cổ phiếu</th>'
-                  '<th>Giá vốn</th><th>Giá thị trường</th><th>% Lợi nhuận</th>'
-                  f'{ty_trong_th}<th>Ngành</th></tr></thead>'
-                  f'<tbody>{table_rows_html}</tbody></table></div>')
-    st.markdown(table_html, unsafe_allow_html=True)
+    # BẢNG DANH MỤC (HTML)
+    render_portfolio_table(rows, tab_id)
 
     # CHỈNH SỬA / XÓA TỪNG CỔ PHIẾU
     st.markdown("")  # spacer
@@ -830,71 +724,12 @@ def render_tab_content(tab_id: str, tab_title: str):
         st.markdown("---")
         st.markdown("### <span style='color:#00897B;'>📊 Lịch sử giao dịch đã đóng</span>", unsafe_allow_html=True)
 
-        # Phân loại
-        chot_loi = [c for c in curr_closed if c["loai"] == "chot_loi"]
-        cat_lo = [c for c in curr_closed if c["loai"] == "cat_lo"]
-
         # Thống kê tổng quan
-        total_closed = len(curr_closed)
-        win_rate = len(chot_loi) / total_closed * 100 if total_closed > 0 else 0
-        avg_profit = sum(c["profit_pct"] for c in chot_loi) / len(chot_loi) if chot_loi else 0
-        avg_loss = sum(c["profit_pct"] for c in cat_lo) / len(cat_lo) if cat_lo else 0
-
-        stats_html = f"""
-        <div class="kpi-row">
-            <div class="kpi-card" style="background: linear-gradient(145deg, #2E7D32 0%, #1B5E20 100%); box-shadow: 0 4px 16px rgba(46,125,50,0.25);">
-                <div class="kpi-title-row"><span class="kpi-icon">✅</span><div class="label">Chốt lời</div></div>
-                <div class="value neutral">{len(chot_loi)}</div>
-            </div>
-            <div class="kpi-card" style="background: linear-gradient(145deg, #C62828 0%, #B71C1C 100%); box-shadow: 0 4px 16px rgba(198,40,40,0.25);">
-                <div class="kpi-title-row"><span class="kpi-icon">❌</span><div class="label">Cắt lỗ</div></div>
-                <div class="value neutral">{len(cat_lo)}</div>
-            </div>
-            <div class="kpi-card" style="background: linear-gradient(145deg, #1565C0 0%, #0D47A1 100%); box-shadow: 0 4px 16px rgba(21,101,192,0.25);">
-                <div class="kpi-title-row"><span class="kpi-icon">🎯</span><div class="label">Win Rate</div></div>
-                <div class="value neutral">{win_rate:.1f}%</div>
-            </div>
-            <div class="kpi-card" style="background: linear-gradient(145deg, #FF8F00 0%, #EF6C00 100%); box-shadow: 0 4px 16px rgba(255,143,0,0.25);">
-                <div class="kpi-title-row"><span class="kpi-icon">📈</span><div class="label">TB Lãi / Lỗ</div></div>
-                <div class="value neutral" style="font-size:1rem;">{avg_profit:+.2f}% / {avg_loss:+.2f}%</div>
-            </div>
-        </div>
-        """
-        st.markdown(stats_html, unsafe_allow_html=True)
+        stats = prepare_closed_positions_stats(curr_closed)
+        render_closed_stats(stats)
 
         # Bảng chi tiết
-        closed_rows_html = ""
-        for ci, c in enumerate(curr_closed):
-            ngay_mua = datetime.strptime(c["ngay_mua"], "%Y-%m-%d").strftime("%d/%m/%Y")
-            ngay_ban = datetime.strptime(c["ngay_ban"], "%Y-%m-%d").strftime("%d/%m/%Y")
-            gia_von = c["gia_von"]
-            if c.get("gia_von_2"):
-                gia_von = (c["gia_von"] + c["gia_von_2"]) / 2
-            gia_von_fmt = f"{gia_von:,.0f}".replace(",", ".")
-            gia_ban_fmt = f"{c['gia_ban']:,.0f}".replace(",", ".")
-            p = c["profit_pct"]
-            if p >= 0:
-                p_cls = "profit-positive"
-                p_icon = "▲"
-                p_sign = "+"
-            else:
-                p_cls = "profit-negative"
-                p_icon = "▼"
-                p_sign = ""
-            profit_display = f'<span class="{p_cls}">{p_icon} {p_sign}{p:.2f}%</span>'
-            loai_badge = '<span style="background:#2E7D32;color:#fff;padding:2px 8px;border-radius:8px;font-size:0.75rem;">Chốt lời</span>' if c["loai"] == "chot_loi" else '<span style="background:#C62828;color:#fff;padding:2px 8px;border-radius:8px;font-size:0.75rem;">Cắt lỗ</span>'
-
-            closed_rows_html += (f'<tr><td>{ci+1}</td><td class="symbol">{c["ma_cp"]}</td>'
-                                 f'<td>{ngay_mua}</td><td>{gia_von_fmt}</td>'
-                                 f'<td>{ngay_ban}</td><td>{gia_ban_fmt}</td>'
-                                 f'<td>{profit_display}</td><td>{loai_badge}</td></tr>')
-
-        closed_table = ('<div class="glass-card"><table class="portfolio-table">'
-                        '<thead><tr><th>STT</th><th>Mã CP</th><th>Ngày mua</th>'
-                        '<th>Giá vốn</th><th>Ngày bán</th><th>Giá bán</th>'
-                        '<th>% Lợi nhuận</th><th>Loại</th></tr></thead>'
-                        f'<tbody>{closed_rows_html}</tbody></table></div>')
-        st.markdown(closed_table, unsafe_allow_html=True)
+        render_closed_table(curr_closed)
 
         # Nút xóa từng giao dịch đã đóng
         for ci, c in enumerate(curr_closed):
