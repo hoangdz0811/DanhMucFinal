@@ -6,7 +6,7 @@ from datetime import datetime, date
 from dotenv import load_dotenv
 from supabase import create_client, Client
 
-from utils.data_processing import calculate_portfolio_metrics, prepare_closed_positions_stats, get_industry_map, get_market_price
+from utils.data_processing import calculate_portfolio_metrics, prepare_closed_positions_stats, get_market_price
 from utils.ui_components import render_header, render_portfolio_table, render_closed_stats, render_closed_table
 
 # ============================================================

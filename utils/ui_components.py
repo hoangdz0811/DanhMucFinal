@@ -5,7 +5,7 @@ from datetime import datetime, date
 from typing import List, Dict, Any
 
 # Utils
-from utils.data_processing import calculate_portfolio_metrics, prepare_closed_positions_stats, get_market_price, get_industry_map
+from utils.data_processing import calculate_portfolio_metrics, prepare_closed_positions_stats, get_market_price
 
 def render_header(tab_id: str):
     """Render the application header with optional logo."""
