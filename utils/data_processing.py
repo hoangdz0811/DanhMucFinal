@@ -35,33 +35,28 @@ def get_market_price(symbol: str) -> float | None:
 
 
 @st.cache_data(ttl=86400, show_spinner=False)
-def get_industry_map(symbols: list) -> dict:
-    """Lấy bảng phân ngành ICB cấp 2 cho danh sách mã CP (cache 1 ngày)."""
-    industry_map = {}
-    for symbol in set(symbols):
-        try:
-            company = Company(symbol=symbol, source='VCI')
-            df = company.overview()
-            if df is not None and not df.empty and 'icb_name2' in df.columns:
-                industry_map[symbol] = df['icb_name2'].iloc[0]
-            else:
-                industry_map[symbol] = "—"
-        except Exception as e:
-            print(f"Error fetching industry for {symbol}: {e}")
-            industry_map[symbol] = "—"
-    return industry_map
+def get_single_industry(symbol: str) -> str:
+    """Lấy bảng phân ngành ICB cấp 2 cho một mã CP (cache 1 ngày)."""
+    try:
+        company = Company(symbol=symbol, source='VCI')
+        df = company.overview()
+        if df is not None and not df.empty and 'icb_name2' in df.columns:
+            # Handle potential None or NaN values
+            val = df['icb_name2'].iloc[0]
+            if val and str(val).lower() != 'nan':
+                return str(val)
+    except Exception as e:
+        print(f"Error fetching industry for {symbol}: {e}")
+    return "—"
 
 def calculate_portfolio_metrics(curr_portfolio):
     """Tính toán các chỉ số cho danh mục: lãi/lỗ, giá trung bình, giá hiện tại..."""
     rows = []
     
-    # Extract unique symbols for industry mapping
-    symbols = [item["ma_cp"] for item in curr_portfolio]
-    industry_map = get_industry_map(symbols)
-    
     for item in curr_portfolio:
         ma_cp = item["ma_cp"]
         market_price = get_market_price(ma_cp)
+        nganh = get_single_industry(ma_cp)
         
         # Giá vốn trung bình nếu mua 2 lần
         gia_von_avg = item["gia_von"]
@@ -86,7 +81,7 @@ def calculate_portfolio_metrics(curr_portfolio):
             "current_price": display_price,
             "profit_pct": profit_pct,
             "ty_trong": item.get("ty_trong", 0),
-            "nganh": industry_map.get(ma_cp, "—"),
+            "nganh": nganh,
             "raw_item": item # Keep original item for editing/deleting references
         })
         
