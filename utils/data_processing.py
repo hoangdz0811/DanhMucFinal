@@ -1,6 +1,6 @@
 import streamlit as st
 from datetime import datetime, date
-from vnstock import Quote, Listing
+from vnstock import Quote, Company
 
 import time
 
@@ -35,21 +35,29 @@ def get_market_price(symbol: str) -> float | None:
 
 
 @st.cache_data(ttl=86400, show_spinner=False)
-def get_industry_map() -> dict:
-    """Lấy bảng phân ngành ICB cấp 2 cho tất cả mã CP (cache 1 ngày)."""
-    try:
-        ls = Listing()
-        df = ls.symbols_by_industries()
-        if df is not None and not df.empty:
-            return dict(zip(df["symbol"], df["industry_name"]))
-    except Exception as e:
-        print(f"Error fetching industry map: {e}")
-        pass
-    return {}
+def get_industry_map(symbols: list) -> dict:
+    """Lấy bảng phân ngành ICB cấp 2 cho danh sách mã CP (cache 1 ngày)."""
+    industry_map = {}
+    for symbol in set(symbols):
+        try:
+            company = Company(symbol=symbol, source='VCI')
+            df = company.overview()
+            if df is not None and not df.empty and 'icb_name2' in df.columns:
+                industry_map[symbol] = df['icb_name2'].iloc[0]
+            else:
+                industry_map[symbol] = "—"
+        except Exception as e:
+            print(f"Error fetching industry for {symbol}: {e}")
+            industry_map[symbol] = "—"
+    return industry_map
 
-def calculate_portfolio_metrics(curr_portfolio, industry_map):
+def calculate_portfolio_metrics(curr_portfolio):
     """Tính toán các chỉ số cho danh mục: lãi/lỗ, giá trung bình, giá hiện tại..."""
     rows = []
+    
+    # Extract unique symbols for industry mapping
+    symbols = [item["ma_cp"] for item in curr_portfolio]
+    industry_map = get_industry_map(symbols)
     
     for item in curr_portfolio:
         ma_cp = item["ma_cp"]

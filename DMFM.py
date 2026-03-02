@@ -541,8 +541,7 @@ def render_tab_content(tab_id: str, tab_title: str):
         return
 
     with st.spinner("Đang lấy giá thị trường..."):
-        industry_map = get_industry_map()
-        rows = calculate_portfolio_metrics(curr_portfolio, industry_map)
+        rows = calculate_portfolio_metrics(curr_portfolio)
 
     # BẢNG DANH MỤC (HTML)
     render_portfolio_table(rows, tab_id)
